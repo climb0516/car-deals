@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="referrer" content="no-referrer">
+  <title>车市行情 · 新车与降价</title>
+  <meta name="description" content="本地经销商降价榜、新车上市日历、月销量榜，买车前看一眼">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0b0908; --panel: #161311; --panel-2: #1e1a17; --hover: rgba(255,255,255,0.035);
+      --line: rgba(255,255,255,0.07); --line-2: rgba(255,255,255,0.14);
+      --text-1: #f3eeea; --text-2: #aaa29b; --text-3: #6e6761;
+      --accent: #fb923c; --grad: linear-gradient(120deg, #fdba74 0%, #fb923c 45%, #ef4444 100%);
+      --up: #f87171; --down: #4ade80; --new: #60a5fa;
+      --shadow: 0 0 0 1px var(--line), 0 12px 32px rgba(0,0,0,0.35);
+    }
+    :root[data-theme="light"] {
+      --bg: #faf8f6; --panel: #ffffff; --panel-2: #f4f0ec; --hover: rgba(60,30,10,0.035);
+      --line: rgba(60,30,10,0.08); --line-2: rgba(60,30,10,0.16);
+      --text-1: #1f1915; --text-2: #5e554e; --text-3: #9a908a;
+      --accent: #ea580c; --up: #dc2626; --down: #16a34a; --new: #2563eb;
+      --shadow: 0 0 0 1px var(--line), 0 10px 28px rgba(60,30,10,0.06);
+    }
+    body { background: var(--bg); color: var(--text-1); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; font-feature-settings: 'tnum' 1; min-height: 100vh; }
+    body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(900px 420px at 15% -10%, rgba(251,146,60,0.10), transparent 70%); }
+    a { color: inherit; text-decoration: none; }
+    button, select { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
+      background: color-mix(in srgb, var(--bg) 75%, transparent); border-bottom: 1px solid var(--line); }
+    .topbar-inner { max-width: 1240px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; gap: 14px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; letter-spacing: -0.02em; white-space: nowrap; }
+    .logo-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--grad); display: grid; place-items: center; font-size: 16px; }
+    .logo small { font-weight: 500; color: var(--text-3); font-size: 12px; margin-left: 2px; }
+    .nav { display: flex; gap: 4px; margin-left: 10px; }
+    .nav a { padding: 6px 12px; border-radius: 8px; color: var(--text-2); font-size: 13px; font-weight: 500; white-space: nowrap; }
+    .nav a:hover { color: var(--text-1); background: var(--hover); }
+    .spacer { flex: 1; }
+    .updated { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+    .icon-btn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); display: grid; place-items: center; color: var(--text-2); flex-shrink: 0; }
+    .icon-btn:hover { color: var(--text-1); border-color: var(--line-2); }
+
+    .layout { max-width: 1240px; margin: 0 auto; padding: 24px 20px 64px; display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 22px; }
+    .aside { position: sticky; top: 76px; align-self: start; display: flex; flex-direction: column; gap: 14px; }
+    .panel { background: var(--panel); border-radius: 16px; box-shadow: var(--shadow); }
+    .pad { padding: 18px 20px; }
+    h2.sec { font-size: 17px; font-weight: 700; margin: 34px 0 12px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; scroll-margin-top: 80px; }
+    h2.sec small { color: var(--text-3); font-weight: 500; font-size: 12.5px; }
+    .hero h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+    .hero h1 em { font-style: normal; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .hero p { color: var(--text-2); margin-top: 6px; }
+
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+    .kpi { padding: 16px 18px; min-width: 0; display: flex; flex-direction: column; }
+    .kpi .k { font-size: 12.5px; color: var(--text-2); }
+    .kpi .v { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .kpi .s { font-size: 12px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chip { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--text-2); font-size: 12.5px; white-space: nowrap; }
+    .chip:hover { color: var(--text-1); border-color: var(--line-2); }
+    .chip.on { background: var(--text-1); color: var(--bg); border-color: var(--text-1); }
+    .sel { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--text-2); font-size: 12.5px; background: var(--panel); }
+    .sel option { background: var(--panel); color: var(--text-1); }
+
+    .cars { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .car { padding: 14px; display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 12px; align-items: center; }
+    .car:hover { box-shadow: 0 0 0 1px var(--line-2), 0 12px 30px rgba(0,0,0,0.25); }
+    .car .img { width: 76px; height: 50px; border-radius: 8px; background: var(--panel-2); overflow: hidden; display: grid; place-items: center; }
+    .car .img img { width: 100%; height: 100%; object-fit: contain; }
+    .car b { display: block; font-size: 14.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .car .brand { font-size: 12px; color: var(--text-3); }
+    .car .cut { font-size: 17px; font-weight: 700; color: var(--down); letter-spacing: -0.02em; margin-top: 2px; }
+    .car .cut small { font-size: 12px; font-weight: 600; margin-left: 4px; }
+    .car .now { font-size: 12px; color: var(--text-2); }
+    .bar { grid-column: 1 / -1; height: 4px; border-radius: 999px; background: var(--panel-2); overflow: hidden; }
+    .bar i { display: block; height: 100%; background: var(--down); border-radius: 999px; }
+    .more { display: block; margin: 12px auto 0; padding: 8px 18px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--text-2); font-size: 13px; }
+    .more:hover { color: var(--text-1); }
+
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .list h3 { font-size: 13.5px; font-weight: 600; color: var(--text-2); padding: 14px 16px 6px; }
+    .launch { display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 12px; padding: 11px 16px; border-top: 1px solid var(--line); align-items: center; }
+    .launch:hover { background: var(--hover); }
+    .launch .d { text-align: center; line-height: 1.2; }
+    .launch .d b { display: block; font-size: 14.5px; font-weight: 700; white-space: nowrap; }
+    .launch .d small { font-size: 11px; color: var(--text-3); }
+    .launch .nm { font-weight: 600; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .launch .t { font-size: 12px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .launch .p { text-align: right; font-size: 13.5px; font-weight: 600; white-space: nowrap; }
+    .launch .p small { display: block; font-size: 11.5px; color: var(--text-3); font-weight: 500; }
+    .tag { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 6px; margin-left: 6px; }
+    .tag.pre { color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
+    .tag.new { color: var(--new); background: color-mix(in srgb, var(--new) 15%, transparent); }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 9px 14px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+    th { font-size: 12px; color: var(--text-3); font-weight: 600; }
+    td.num, th.num { text-align: right; }
+    tr:last-child td { border-bottom: 0; }
+    .table-wrap { overflow-x: auto; }
+    .rk { font-weight: 700; color: var(--text-3); width: 32px; }
+    tr:nth-child(-n+4) .rk { color: var(--accent); }
+    .mv { font-size: 12px; font-weight: 600; }
+    .mv.up { color: var(--up); } .mv.down { color: var(--down); }
+    .cell-car { display: flex; align-items: center; gap: 10px; }
+    .cell-car img { width: 48px; height: 32px; object-fit: contain; border-radius: 6px; background: var(--panel-2); }
+    .muted { color: var(--text-3); }
+    .xcar { display: flex; flex-wrap: wrap; gap: 8px; }
+    .xcar span { font-size: 12.5px; padding: 5px 10px; border-radius: 999px; background: var(--panel-2); color: var(--text-2); }
+    .xcar span b { color: var(--text-1); font-weight: 600; margin-right: 6px; }
+
+    .widget { padding: 16px; }
+    .widget h3 { font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 10px; }
+    .mini-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; gap: 8px; }
+    .mini-row span:first-child { color: var(--text-2); }
+    .note { font-size: 12px; color: var(--text-3); line-height: 1.7; }
+    .ok { color: var(--down); } .bad { color: var(--up); }
+
+    @media (max-width: 980px) { .layout { grid-template-columns: minmax(0, 1fr); } .aside { position: static; } .nav { display: none; } }
+    @media (max-width: 760px) {
+      .topbar-inner { padding: 10px 16px; } .logo small, .updated { display: none; }
+      .layout { padding: 16px 16px 50px; } .hero h1 { font-size: 21px; }
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .kpi .v { font-size: 18px; }
+      .two { grid-template-columns: minmax(0, 1fr); }
+      .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .chips::-webkit-scrollbar { display: none; }
+      th, td { padding: 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="logo"><div class="logo-mark">🚗</div>车市行情<small>新车与降价</small></div>
+      <nav class="nav"><a href="#cuts">降价榜</a><a href="#launch">新车日历</a><a href="#sales">销量榜</a></nav>
+      <div class="spacer"></div>
+      <span class="updated" id="updated"></span>
+      <a class="icon-btn" href="https://github.com/climb0516/car-deals/actions/workflows/scrape.yml" target="_blank" rel="noopener" title="立即抓取（在 GitHub Actions 点 Run workflow）">⚡</a>
+      <button class="icon-btn" id="theme" title="切换主题"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main id="main"><div class="panel pad muted">加载中…</div></main>
+    <aside class="aside" id="aside"></aside>
+  </div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('cd:' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('cd:' + k, JSON.stringify(v)); } catch {} },
+};
+const RANGES = [['all', '全部价位'], ['0-10', '10 万以下'], ['10-20', '10–20 万'], ['20-30', '20–30 万'], ['30-999', '30 万以上']];
+const state = { city: store.get('city', '杭州'), range: 'all', brand: '', sort: 'pct', limit: 24, month: null };
+let D = null;
+
+const todayISO = () => new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+const diffDays = (a, b) => Math.round((new Date(b + 'T00:00:00Z') - new Date(a + 'T00:00:00Z')) / 86400000);
+const md = iso => `${+iso.slice(5, 7)}月${+iso.slice(8, 10)}日`;
+const ym = k => `${k.slice(0, 4)} 年 ${+k.slice(4)} 月`;
+const fmtW = v => v == null ? '—' : (v >= 100 ? v.toFixed(0) : v.toFixed(2).replace(/\.?0+$/, ''));
+const priceText = p => !p ? '' : p[0] === p[1] ? `${fmtW(p[0])} 万起` : `${fmtW(p[0])}–${fmtW(p[1])} 万`;
+function ago(iso) {
+  const s = (Date.now() - new Date(iso)) / 1000;
+  if (s < 3600) return Math.max(1, Math.round(s / 60)) + ' 分钟前';
+  if (s < 86400) return Math.round(s / 3600) + ' 小时前';
+  return Math.round(s / 86400) + ' 天前';
+}
+
+function cutList() {
+  const c = D.cuts[state.city] || { items: [] };
+  const [lo, hi] = state.range === 'all' ? [0, 1e9] : state.range.split('-').map(Number);
+  return c.items.filter(x => x.min >= lo && x.min < hi && (!state.brand || x.brand === state.brand))
+    .sort((a, b) => state.sort === 'pct' ? b.pct - a.pct || b.cut - a.cut : b.cut - a.cut);
+}
+
+function render() {
+  const today = todayISO();
+  const months = Object.keys(D.sales).sort().reverse();
+  state.month ||= months[0];
+  const c = D.cuts[state.city] || { items: [], total: 0 };
+  const topCut = [...c.items].sort((a, b) => b.pct - a.pct)[0];
+  const champ = D.sales[months[0]]?.[0];
+  const upcoming = D.launches.filter(x => x.status === 'upcoming' && x.date && x.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+  const recent = D.launches.filter(x => x.status === 'launched').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const week = recent.filter(x => x.date && diffDays(x.date, today) <= 7).length;
+  const brands = [...new Set(c.items.map(x => x.brand))].sort((a, b) => a.localeCompare(b, 'zh'));
+
+  $('#main').innerHTML = `
+    <section class="hero"><h1>买车前<em>看一眼</em></h1><p>本地经销商降价榜、新车上市日历、月销量榜。降价信息来自经销商报价，实际以到店为准。</p></section>
+    <div class="kpis">
+      <div class="panel kpi"><span class="k">${esc(state.city)} 降幅最大</span><span class="v">${esc(topCut?.name || '—')}</span><span class="s">${topCut ? `最高降 ${fmtW(topCut.cut)} 万 · ${topCut.pct}%` : ''}</span></div>
+      <div class="panel kpi"><span class="k">${months[0] ? ym(months[0]) : ''}销量冠军</span><span class="v">${esc(champ?.name || '—')}</span><span class="s">${champ ? champ.sales.toLocaleString() + ' 辆' : ''}</span></div>
+      <div class="panel kpi"><span class="k">近 7 天上市</span><span class="v">${week} 款新车</span><span class="s">${esc(recent.slice(0, 2).map(x => x.name).join('、'))}</span></div>
+      <div class="panel kpi"><span class="k">下一款上市</span><span class="v">${esc(upcoming[0]?.name || '—')}</span><span class="s">${upcoming[0] ? `${md(upcoming[0].date)} · ${diffDays(today, upcoming[0].date) || '今天'}${diffDays(today, upcoming[0].date) ? ' 天后' : ''}` : ''}</span></div>
+    </div>
+
+    <h2 class="sec" id="cuts">降价榜<small>${esc(state.city)}本地经销商报价 · 共 ${c.total} 个车系有优惠 · 显示前 100</small></h2>
+    <div class="filters">
+      <div class="chips">${D.cities.map(x => `<button class="chip ${x === state.city ? 'on' : ''}" data-city="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+    </div>
+    <div class="filters">
+      <div class="chips">${RANGES.map(([k, l]) => `<button class="chip ${k === state.range ? 'on' : ''}" data-range="${k}">${l}</button>`).join('')}</div>
+      <select class="sel" id="brand"><option value="">全部品牌</option>${brands.map(b => `<option ${b === state.brand ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select>
+      <select class="sel" id="sort"><option value="pct" ${state.sort === 'pct' ? 'selected' : ''}>按降幅 %</option><option value="cut" ${state.sort === 'cut' ? 'selected' : ''}>按降价金额</option></select>
+    </div>
+    <div id="cutBox"></div>
+
+    <h2 class="sec" id="launch">新车日历<small>来自新闻标题，同一车型多家报道已合并</small></h2>
+    <div class="two">
+      <div class="panel list"><h3>即将上市 · ${upcoming.length} 款</h3>${upcoming.map(x => launchRow(x, true)).join('') || '<div class="launch muted">暂无</div>'}</div>
+      <div class="panel list"><h3>近期已上市 · ${recent.length} 款</h3>${recent.slice(0, 14).map(x => launchRow(x, false)).join('')}</div>
+    </div>
+    ${D.xcar?.length ? `<div class="panel pad" style="margin-top:12px"><div class="muted" style="font-size:12.5px;margin-bottom:10px">爱卡汽车 · 最新上市车型</div><div class="xcar">${D.xcar.map(x => `<span><b>${esc(x.name)}</b>${esc(x.price)}</span>`).join('')}</div></div>` : ''}
+
+    <h2 class="sec" id="sales">月销量榜<small>懂车帝口径 · 名次变化对比上一个月</small></h2>
+    <div class="filters"><div class="chips">${months.map(k => `<button class="chip ${k === state.month ? 'on' : ''}" data-month="${k}">${ym(k)}</button>`).join('')}</div></div>
+    <div class="panel"><div class="table-wrap">${salesTable(months)}</div></div>
+    <p class="note" style="margin-top:14px">降价榜的「最高降」是该车系所有配置中优惠最多的一款，按原指导价计算；不同配置、城市、门店差别很大，请以到店报价为准。新车信息从新闻标题自动提取，可能有遗漏或误差。</p>`;
+  renderCuts();
+  renderAside();
+}
+
+function renderCuts() {
+  const list = cutList();
+  $('#cutBox').innerHTML = `<div class="cars">${list.slice(0, state.limit).map(x => `<a class="panel car" href="https://www.dongchedi.com/auto/series/${x.id}" target="_blank" rel="noopener">
+      <div class="img">${x.img ? `<img src="${esc(x.img)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
+      <div style="min-width:0"><b>${esc(x.name)}</b><span class="brand">${esc(x.brand)}</span>
+        <div class="cut">↓${fmtW(x.cut)} 万<small>${x.pct}%</small></div><div class="now">现价 ${esc(x.price)}</div></div>
+      <div class="bar"><i style="width:${Math.min(100, x.pct * 2)}%"></i></div></a>`).join('') || '<div class="panel pad muted">没有符合条件的车型</div>'}</div>
+    ${list.length > state.limit ? `<button class="more" id="more">再显示 ${Math.min(24, list.length - state.limit)} 款（共 ${list.length}）</button>` : ''}`;
+}
+
+function launchRow(x, up) {
+  const today = todayISO(), d = x.date;
+  const left = up && d ? diffDays(today, d) : null;
+  return `<a class="launch" href="${esc(x.url)}" target="_blank" rel="noopener">
+    <div class="d">${d ? `<b>${md(d)}</b><small>${up ? (left ? left + ' 天后' : '今天') : (diffDays(d, today) ? diffDays(d, today) + ' 天前' : '今天')}</small>` : '<small>待定</small>'}</div>
+    <div style="min-width:0"><div class="nm">${esc(x.name)}${x.presale ? '<span class="tag pre">预售</span>' : ''}${x.also ? `<span class="tag new">${x.also + 1} 家报道</span>` : ''}</div><div class="t">${esc(x.title)}</div></div>
+    <div class="p">${x.price ? priceText(x.price) : '—'}<small>${esc(x.source)}</small></div></a>`;
+}
+
+function salesTable(months) {
+  const cur = D.sales[state.month] || [], idx = months.indexOf(state.month), prev = D.sales[months[idx + 1]] || [];
+  const prevRank = Object.fromEntries(prev.map((x, i) => [x.id, i + 1]));
+  return `<table><tr><th>#</th><th>车型</th><th class="num">销量</th><th class="num">名次变化</th><th class="num">价格</th></tr>
+    ${cur.slice(0, 30).map((x, i) => {
+      const pr = prevRank[x.id], mv = pr ? pr - (i + 1) : null;
+      return `<tr><td class="rk">${i + 1}</td><td><div class="cell-car">${x.img ? `<img src="${esc(x.img)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span><b>${esc(x.name)}</b> <span class="muted" style="font-size:12px">${esc(x.brand)}</span></span></div></td>
+        <td class="num">${x.sales.toLocaleString()}</td>
+        <td class="num">${!prev.length ? '—' : pr ? (mv ? `<span class="mv ${mv > 0 ? 'up' : 'down'}">${mv > 0 ? '↑' : '↓'}${Math.abs(mv)}</span>` : '<span class="muted">—</span>') : '<span class="tag new">新上榜</span>'}</td>
+        <td class="num muted">${esc(x.price)}</td></tr>`;
+    }).join('')}</table>`;
+}
+
+function renderAside() {
+  const c = D.cuts[state.city] || { items: [] };
+  const byBrand = {};
+  c.items.forEach(x => (byBrand[x.brand] ||= []).push(x));
+  const brandTop = Object.entries(byBrand).sort((a, b) => b[1].length - a[1].length).slice(0, 6);
+  $('#aside').innerHTML = `
+    <div class="panel widget"><h3>🏷 ${esc(state.city)} 降价最多的品牌</h3>
+      ${brandTop.map(([b, l]) => `<div class="mini-row"><span>${esc(b)}</span><span>${l.length} 个车系 · 最高 ${Math.max(...l.map(x => x.pct))}%</span></div>`).join('')}
+      <div class="note" style="margin-top:6px">统计范围：降价榜前 100</div></div>
+    <div class="panel widget"><h3>💡 怎么看降价榜</h3>
+      <div class="note">「最高降」是车系里优惠最多的那一款配置，按原指导价算；热门配置往往优惠更少。<br>降幅特别大的通常是换代清库存、销量不佳或即将停产的车型，买前确认质保和保值。<br>同一款车不同城市差价可能上万，可切换城市对比。</div></div>
+    <div class="panel widget"><h3>📡 数据来源 · ${D.sources.filter(s => s.ok).length}/${D.sources.length} 正常</h3>
+      ${D.sources.map(s => `<div class="mini-row"><span>${esc(s.name)}</span><span class="${s.ok ? 'ok' : 'bad'}">${s.ok ? '正常' : '失败 · 沿用旧数据'}</span></div>`).join('')}
+      <div class="note" style="margin-top:6px">每天自动更新 · 最近 ${new Date(D.updated).toLocaleString('zh-CN', { hour12: false })}</div></div>`;
+  $('#updated').textContent = '更新于 ' + ago(D.updated);
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-city],[data-range],[data-month],#more');
+  if (!t) return;
+  if (t.id === 'more') { state.limit += 24; renderCuts(); return; }
+  if (t.dataset.city) { state.city = t.dataset.city; state.brand = ''; state.limit = 24; store.set('city', state.city); }
+  if (t.dataset.range) { state.range = t.dataset.range; state.limit = 24; }
+  if (t.dataset.month) { state.month = t.dataset.month; }
+  render();
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'brand') { state.brand = e.target.value; state.limit = 24; renderCuts(); }
+  if (e.target.id === 'sort') { state.sort = e.target.value; renderCuts(); }
+});
+function applyTheme(t) { document.documentElement.dataset.theme = t; }
+applyTheme(store.get('theme', 'dark'));
+$('#theme').addEventListener('click', () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; applyTheme(t); store.set('theme', t); });
+
+(async () => {
+  try {
+    D = await fetch('data.json', { cache: 'no-cache' }).then(r => r.json());   // no-cache：更新后刷新即可见
+    if (!D.cuts[state.city]) state.city = D.cities.find(c => D.cuts[c]) || '杭州';
+    render();
+  } catch (e) {
+    $('#main').innerHTML = '<div class="panel pad">数据加载失败，请稍后刷新</div>';
+  }
+})();
+</script>
+</body>
+</html>
