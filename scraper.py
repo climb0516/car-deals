@@ -101,6 +101,18 @@ NOISE = ("销量", "降价", "召回", "财报", "股价", "营收", "国补", "
          "FAQ", "值不值", "什么时候", "明年", "多少钱", "怎么样", "？", "?")   # 问答式 SEO 文和推测性内容不算新车上市
 
 
+def price_of(title):
+    """只认售价：带「售价 / 预售价 / 指导价…」前缀、「X 万起」或价格区间；「优惠 / 降 / 省 X 万」不算。"""
+    for m in PRICE_RE.finditer(title):
+        before, after = title[max(0, m.start() - 4):m.start()], title[m.end():m.end() + 1]
+        if re.search(r"优惠|降|省|让利|减|补贴|送|返", before):
+            continue
+        if m.group(2) or after == "起" or title[m.end() - 1:m.end() + 2].startswith("万元起") or \
+                re.search(r"售价?|预售价?|指导价|起售价|权益价|置换价?|限时|一口价|补贴后", before):
+            return [float(m.group(1)), float(m.group(2) or m.group(1))]
+    return None
+
+
 def launches():
     out = []
     queries = [("正式上市 售价 万元 when:21d", "launched"), ("将于 月 日 上市 预售 when:30d", "upcoming"),
@@ -129,7 +141,7 @@ def launches():
             # 泛指多款车的盘点、数码产品等不是具体车型
             if len(name) < 2 or re.search(r"新车|多款|几款|\d款新|^\d款|这两款|最近|一大波|公布|重磅|^级|vivo|香港|手机", name):
                 name = ""
-            pr = PRICE_RE.search(title)
+            pr = price_of(title)
             dm = DATE_RE.search(title)
             launch_date = None
             if dm:
@@ -140,7 +152,7 @@ def launches():
                     pass
             upcoming = bool(launch_date and launch_date > pub.date().isoformat()) or ("预售" in title and "上市" not in seg.replace("预售", ""))
             out.append({"title": title, "url": it.findtext("link"), "source": source, "time": pub.isoformat(),
-                        "name": name[:24], "price": [float(pr.group(1)), float(pr.group(2) or pr.group(1))] if pr else None,
+                        "name": name[:24], "price": pr,
                         "presale": "预售" in title, "date": launch_date or (None if upcoming else pub.date().isoformat()),
                         "status": "upcoming" if upcoming else "launched"})
     # 同一车型多家报道：去掉年款 / 代际 / 品牌等修饰后，按包含关系去重，保留最新一条
