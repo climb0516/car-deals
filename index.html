@@ -77,14 +77,14 @@
     .car:hover { box-shadow: 0 0 0 1px var(--line-2), 0 12px 30px rgba(0,0,0,0.25); }
     .car .img { width: 76px; height: 50px; border-radius: 8px; background: var(--panel-2); overflow: hidden; display: grid; place-items: center; }
     .car .img img { width: 100%; height: 100%; object-fit: contain; }
-    .car b { display: block; font-size: 14.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .car b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 14.5px; font-weight: 600; line-height: 1.35; overflow: hidden; word-break: break-all; }   /* 长车名最多两行 */
     .car .brand { font-size: 12px; color: var(--text-3); }
     .car .cut { font-size: 17px; font-weight: 700; color: var(--down); letter-spacing: -0.02em; margin-top: 2px; }
     .car .cut small { font-size: 12px; font-weight: 600; margin-left: 4px; }
     .car .now { font-size: 12px; color: var(--text-2); }
     .bar { grid-column: 1 / -1; height: 4px; border-radius: 999px; background: var(--panel-2); overflow: hidden; }
     .bar i { display: block; height: 100%; background: var(--down); border-radius: 999px; }
-    .more { display: block; margin: 12px auto 0; padding: 8px 18px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--text-2); font-size: 13px; }
+    .more { display: block; width: fit-content; margin: 12px auto 0; padding: 8px 18px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--text-2); font-size: 13px; }
     .more:hover { color: var(--text-1); }
 
     .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -113,7 +113,9 @@
     .mv { font-size: 12px; font-weight: 600; }
     .mv.up { color: var(--up); } .mv.down { color: var(--down); }
     .cell-car { display: flex; align-items: center; gap: 10px; }
-    .cell-car img { width: 48px; height: 32px; object-fit: contain; border-radius: 6px; background: var(--panel-2); }
+    .cell-car img { width: 48px; height: 32px; object-fit: contain; border-radius: 6px; background: var(--panel-2); flex-shrink: 0; }
+    .cell-car .cn { min-width: 0; }
+    .cell-car .cn small { color: var(--text-3); font-size: 12px; margin-left: 6px; }
     .muted { color: var(--text-3); }
     .xcar { display: flex; flex-wrap: wrap; gap: 8px; }
     .xcar span { font-size: 12.5px; padding: 5px 10px; border-radius: 999px; background: var(--panel-2); color: var(--text-2); }
@@ -126,7 +128,11 @@
     .note { font-size: 12px; color: var(--text-3); line-height: 1.7; }
     .ok { color: var(--down); } .bad { color: var(--up); }
 
-    @media (max-width: 980px) { .layout { grid-template-columns: minmax(0, 1fr); } .aside { position: static; } .nav { display: none; } }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: minmax(0, 1fr); } .aside { position: static; }   /* 右栏挪到正文下面 */
+      .topbar-inner { flex-wrap: wrap; row-gap: 6px; }
+      .nav { order: 10; width: 100%; margin-left: -8px; overflow-x: auto; scrollbar-width: none; }   /* 手机上导航挪到第二行，可横滑 */
+    }
     @media (max-width: 760px) {
       .topbar-inner { padding: 10px 16px; } .logo small, .updated { display: none; }
       .layout { padding: 16px 16px 50px; } .hero h1 { font-size: 21px; }
@@ -134,7 +140,115 @@
       .two { grid-template-columns: minmax(0, 1fr); }
       .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .chips::-webkit-scrollbar { display: none; }
       th, td { padding: 8px 10px; }
+      /* 销量表：价格列收起、车名和品牌上下排，不用横滑 */
+      .sales .c-price { display: none; }
+      .sales td.c-car { white-space: normal; }
+      .cell-car { gap: 8px; } .cell-car img { width: 40px; height: 27px; }
+      .cell-car .cn b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .cell-car .cn small { display: block; margin-left: 0; }
+      .sales th, .sales td { padding: 8px 8px; }
+      .sales .rk { width: 26px; }
+      .cars { grid-template-columns: minmax(0, 1fr); }
     }
+    /* ── 详情抽屉 + 列表页（通用组件 kit：电脑右侧滑出，手机底部升起；地址 #/item/类型/id、#/list/key） ── */
+    :root { --kit-bg: var(--bg, #0b0a10); --kit-panel: var(--panel, var(--card, rgba(255,255,255,.04))); --kit-line: var(--line, var(--sep, rgba(255,255,255,.08)));
+      --kit-line2: var(--line-2, rgba(255,255,255,.14)); --kit-t1: var(--text-1, #f1eff7); --kit-t2: var(--text-2, #a39fb3); --kit-t3: var(--text-3, #6b677a);
+      --kit-accent: var(--accent, #a3e635); --kit-hover: var(--hover, rgba(255,255,255,.05)); }
+    .kit-mask { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,.38); display: none; }
+    .kit-mask.open { display: block; }
+    .kit-sheet { position: absolute; top: 12px; right: 12px; bottom: 12px; width: clamp(440px, 42vw, 620px); max-width: calc(100vw - 24px);
+      display: flex; flex-direction: column; overflow: hidden; color: var(--kit-t1); border-radius: 18px;
+      background: linear-gradient(var(--kit-panel), var(--kit-panel)), var(--kit-bg); box-shadow: 0 0 0 1px var(--kit-line2), 0 24px 60px rgba(0,0,0,.45);
+      animation: kit-in .24s ease-out; }
+    @keyframes kit-in { from { transform: translateX(40px); opacity: 0; } }
+    .kit-x { position: absolute; top: 12px; right: 12px; z-index: 3; width: 32px; height: 32px; border-radius: 50%; border: 0; cursor: pointer;
+      background: rgba(0,0,0,.5); color: #fff; font-size: 15px; display: grid; place-items: center; }
+    .kit-scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+    .kit-cover { aspect-ratio: 16/9; background: var(--kit-hover) center / cover no-repeat; position: relative; }
+    .kit-cover.tall { aspect-ratio: auto; height: 280px; background-size: contain; background-color: #000; }
+    .kit-cover.ph { display: grid; place-items: center; font-size: 56px; aspect-ratio: 16/6; }
+    .kit-head { padding: 18px 20px 4px; display: flex; gap: 14px; align-items: flex-start; }
+    .kit-head .kit-thumb { flex-shrink: 0; width: 64px; height: 64px; border-radius: 14px; background: var(--kit-hover) center / cover no-repeat;
+      display: grid; place-items: center; font-size: 28px; overflow: hidden; }
+    .kit-head .kit-t { flex: 1; min-width: 0; padding-right: 30px; }
+    .kit-cover + .kit-head .kit-t { padding-right: 0; }
+    .kit-head h2 { font-size: 19px; font-weight: 800; line-height: 1.35; letter-spacing: -0.01em; }
+    .kit-sub { color: var(--kit-t2); font-size: 13px; margin-top: 4px; }
+    .kit-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .kit-tags span { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: var(--kit-hover); color: var(--kit-t2); }
+    .kit-big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+    .kit-big b { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+    .kit-body { padding: 4px 20px 20px; }
+    .kit-sec { padding-top: 16px; }
+    .kit-sec + .kit-sec { margin-top: 6px; border-top: 1px solid var(--kit-line); }
+    .kit-sec h4 { font-size: 14.5px; font-weight: 700; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .kit-sec h4 small { font-size: 12px; color: var(--kit-t3); font-weight: 500; }
+    .kit-kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+    .kit-kv div { background: var(--kit-hover); border-radius: 10px; padding: 8px 11px; min-width: 0; }
+    .kit-kv small { display: block; font-size: 11px; color: var(--kit-t3); }
+    .kit-kv b { display: block; font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+    .kit-p { font-size: 13.5px; line-height: 1.75; color: var(--kit-t2); white-space: pre-line; }
+    .kit-rows { display: flex; flex-direction: column; }
+    .kit-row { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--kit-line); font-size: 13px; text-decoration: none; color: inherit; }
+    .kit-row:first-child { border-top: 0; }
+    .kit-row[data-kit-go], a.kit-row { cursor: pointer; }
+    .kit-row[data-kit-go]:hover .kit-rt, a.kit-row:hover .kit-rt { color: var(--kit-accent); }
+    .kit-row .kit-rt { flex: 1; min-width: 0; line-height: 1.45; }
+    .kit-row .kit-rm { color: var(--kit-t3); font-size: 12px; white-space: nowrap; }
+    .kit-row img, .kit-row .kit-ri { width: 54px; height: 40px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: var(--kit-hover); }
+    .kit-acts { flex-shrink: 0; display: flex; gap: 10px; padding: 12px 20px 16px; border-top: 1px solid var(--kit-line); }
+    .kit-acts a, .kit-acts button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 12px; border-radius: 11px;
+      font: inherit; font-size: 13.5px; font-weight: 700; text-decoration: none; cursor: pointer; border: 1px solid var(--kit-line2); color: var(--kit-t1); background: transparent; }
+    .kit-acts .pri { background: var(--kit-accent); border-color: var(--kit-accent); color: #111; }
+    .kit-acts a:hover, .kit-acts button:hover { filter: brightness(1.08); }
+    /* 列表页 */
+    .kit-lhead { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .kit-back { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--kit-line2); background: transparent; color: var(--kit-t1);
+      font-size: 20px; cursor: pointer; display: grid; place-items: center; flex-shrink: 0; }
+    .kit-back:hover { background: var(--kit-hover); }
+    .kit-lhead h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+    .kit-lhead small { color: var(--kit-t3); font-size: 12.5px; margin-left: 2px; }
+    .kit-lbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+    .kit-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+    .kit-chips a, .kit-chips button { padding: 5px 12px; border-radius: 8px; background: var(--kit-hover); color: var(--kit-t2); font: inherit; font-size: 13px;
+      font-weight: 600; white-space: nowrap; border: 0; cursor: pointer; text-decoration: none; }
+    .kit-chips .on { background: var(--kit-t1); color: var(--kit-bg); }
+    .kit-chips small { opacity: .6; margin-left: 4px; font-weight: 500; }
+    .kit-sel { padding: 6px 10px; border-radius: 9px; border: 1px solid var(--kit-line2); background: transparent; color: var(--kit-t1); font: inherit; font-size: 12.5px; font-weight: 600; }
+    .kit-sel option { background: var(--kit-bg); }
+    .kit-more { display: block; margin: 16px auto 0; padding: 9px 22px; border-radius: 10px; border: 1px solid var(--kit-line2); background: transparent;
+      color: var(--kit-t1); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .kit-more:hover { background: var(--kit-hover); }
+    .kit-morelink { font-size: 13px; font-weight: 600; color: var(--kit-t2); text-decoration: none; white-space: nowrap; cursor: pointer; }
+    .kit-morelink:hover { color: var(--kit-t1); }
+    [data-kit-item] { cursor: pointer; }
+    @media (max-width: 760px) {
+      .kit-sheet { top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-width: none; height: 86vh; border-radius: 18px 18px 0 0; animation: kit-up .26s ease-out; }
+      @keyframes kit-up { from { transform: translateY(30%); opacity: .5; } }
+      .kit-head { padding: 16px 16px 4px; } .kit-body { padding: 4px 16px 18px; } .kit-acts { padding: 10px 16px 16px; }
+      .kit-cover.tall { height: 220px; }
+      .kit-head .kit-thumb { width: 46px; height: 46px; border-radius: 12px; font-size: 22px; }
+      .kit-head h2 { font-size: 17.5px; }
+      .kit-big b { font-size: 24px; }
+      .kit-lhead h2 { font-size: 19px; }
+    }
+    /* 可点开详情的元素 */
+    .kpi[data-kit-item], a.kpi { cursor: pointer; }
+    .kpi[data-kit-item]:hover, a.kpi:hover { box-shadow: 0 0 0 1px var(--line-2), 0 12px 30px rgba(0,0,0,0.25); }
+    tr[data-kit-item]:hover td { background: var(--hover); }
+    a.mini-row:hover span:first-child { color: var(--text-1); }
+    .xcar span[data-kit-item]:hover { color: var(--text-1); box-shadow: 0 0 0 1px var(--line-2); }
+    h2.sec .kit-morelink { margin-left: auto; }
+    .list h3 { display: flex; align-items: baseline; gap: 8px; }
+    .list h3 .kit-morelink { margin-left: auto; font-size: 12.5px; }
+    /* 详情：城市降幅条、销量柱 */
+    .cbar { width: 90px; height: 5px; border-radius: 999px; background: var(--panel-2); overflow: hidden; flex-shrink: 0; }
+    .cbar i { display: block; height: 100%; background: var(--down); border-radius: 999px; }
+    .trend { display: flex; gap: 8px; align-items: stretch; height: 150px; }
+    .trend div { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; }
+    .trend i { width: 100%; max-width: 40px; border-radius: 6px 6px 2px 2px; background: var(--accent); }
+    .trend span { font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+    .trend small { font-size: 11px; color: var(--text-3); line-height: 1.2; }
   </style>
 </head>
 <body>
@@ -155,6 +269,134 @@
   </div>
 
 <script>
+// ── kit：详情抽屉 + 列表页路由（各站通用，内联在页面里）──
+// 用法：
+//   KIT.item('news', id => ({ title, sub, cover, thumb, tags:[], big, body:'<div class="kit-sec">…</div>', acts:[{text, href, pri}] }))
+//   KIT.list('news', (param, query) => { … 把列表页 HTML 写进容器 … })
+//   条目元素加 data-kit-item="news/<id>" 即可点击打开详情；「查看更多」写成 <a href="#/list/news">
+//   站点首页渲染函数里先调用 KIT.route() —— 返回 true 表示当前是列表页（已渲染），首页不用再渲染
+const KIT = (() => {
+  const items = {}, lists = {};
+  let mask, homeY = 0, fromHome = 0, lastHash = location.hash, onHome = null, listBox = null;
+  const kesc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const parse = h => {
+    const m = (h === undefined ? location.hash : h).match(/^#\/(item|list)\/([^?]+?)(?:\?(.*))?$/);
+    if (!m) return null;
+    const [type, ...rest] = m[2].split('/');
+    return { kind: m[1], type: decodeURIComponent(type), id: rest.map(decodeURIComponent).join('/'), q: new URLSearchParams(m[3] || '') };
+  };
+  function ensure() {
+    if (mask) return;
+    mask = document.createElement('div');
+    mask.className = 'kit-mask';
+    mask.innerHTML = '<div class="kit-sheet" role="dialog" aria-modal="true"></div>';
+    document.body.appendChild(mask);
+    mask.addEventListener('click', e => { if (e.target === mask || e.target.closest('[data-kit-close]')) close(); });
+  }
+  function render(d) {
+    ensure();
+    const cover = d.cover ? `<div class="kit-cover ${d.coverTall ? 'tall' : ''}" style="background-image:url('${kesc(d.cover).replace(/'/g, '%27')}')"></div>`
+      : d.coverIcon ? `<div class="kit-cover ph" style="background:${d.coverBg || 'var(--kit-hover)'}">${d.coverIcon}</div>` : '';
+    const thumb = !d.cover && !d.coverIcon && (d.thumb || d.thumbIcon)
+      ? `<div class="kit-thumb" style="${d.thumb ? `background-image:url('${kesc(d.thumb).replace(/'/g, '%27')}')` : ''}${d.thumbBg ? `;background-color:${d.thumbBg}` : ''}">${d.thumb ? '' : d.thumbIcon}</div>` : '';
+    const acts = (d.acts || []).filter(a => a && (a.href || a.onclick));
+    mask.firstElementChild.innerHTML = `<button class="kit-x" data-kit-close aria-label="关闭">✕</button>
+      <div class="kit-scroll">${cover}
+        <div class="kit-head">${thumb}<div class="kit-t"><h2>${kesc(d.title)}</h2>${d.sub ? `<div class="kit-sub">${d.sub}</div>` : ''}
+          ${(d.tags || []).filter(Boolean).length ? `<div class="kit-tags">${d.tags.filter(Boolean).join('')}</div>` : ''}${d.big ? `<div class="kit-big">${d.big}</div>` : ''}</div></div>
+        <div class="kit-body">${d.body || ''}</div></div>
+      ${acts.length ? `<div class="kit-acts">${acts.map((a, i) => a.href
+        ? `<a class="${a.pri || (i === 0 && acts.length < 3) ? 'pri' : ''}" href="${kesc(a.href)}" ${a.self ? '' : 'target="_blank" rel="noopener"'}>${a.text}</a>`
+        : `<button class="${a.pri ? 'pri' : ''}" data-kit-act="${i}">${a.text}</button>`).join('')}</div>` : ''}`;
+    acts.forEach((a, i) => { if (!a.href) { const b = mask.querySelector(`[data-kit-act="${i}"]`); if (b) b.onclick = a.onclick; } });
+    mask.querySelector('.kit-scroll').scrollTop = 0;
+    mask.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  // 打开详情：写进地址（可分享；浏览器返回 = 关闭）
+  function open(key) {
+    const target = '#/item/' + key;
+    if (location.hash === target) return show(parse(target));
+    ensure();
+    if (parse()?.kind === 'item') history.replaceState(history.state, '', target);
+    else { mask.dataset.base = location.hash; history.pushState({ kit: 1 }, '', target); }
+    lastHash = target;
+    show(parse(target));
+  }
+  function show(r) {
+    const fn = items[r.type];
+    const d = fn && fn(r.id, r.q);
+    if (!d) { close(true); return false; }
+    render(d);
+    return true;
+  }
+  function close(silent) {
+    if (!mask || !mask.classList.contains('open')) return;
+    mask.classList.remove('open');
+    document.body.style.overflow = '';
+    if (!silent && parse()?.kind === 'item') {
+      if (history.state && history.state.kit) history.back();          // 从页面里点开的：退回去
+      else { history.replaceState(null, '', mask.dataset.base || location.pathname + location.search); lastHash = location.hash; }   // 直接打开的分享链接
+    }
+  }
+  // 当前地址是列表页时渲染列表页并返回 true；首页时返回 false
+  function route(box) {
+    if (box) listBox = box;
+    const r = parse();
+    if (r && r.kind === 'list' && lists[r.type]) { lists[r.type](r.id, r.q, listBox); return true; }
+    return false;
+  }
+  // 列表页的公共外壳：返回按钮 + 标题 + 子分类 + 排序
+  function shell({ title, note, chips, sort, sortVal, body, more }) {
+    return `<div class="kit-lhead"><button class="kit-back" data-kit-back title="返回">‹</button><h2>${kesc(title)}</h2>${note ? `<small>${note}</small>` : ''}</div>
+      ${chips || sort ? `<div class="kit-lbar"><div class="kit-chips">${(chips || []).map(c => `<a class="${c.on ? 'on' : ''}" href="${kesc(c.href)}">${kesc(c.text)}${c.count != null ? `<small>${c.count}</small>` : ''}</a>`).join('')}</div>
+        ${sort ? `<select class="kit-sel" data-kit-sort>${sort.map(([v, n]) => `<option value="${kesc(v)}" ${v === sortVal ? 'selected' : ''}>${kesc(n)}</option>`).join('')}</select>` : ''}</div>` : ''}
+      ${body}${more ? `<button class="kit-more" data-kit-more>${more}</button>` : ''}`;
+  }
+  function init(home) {
+    onHome = home;
+    document.addEventListener('click', e => {
+      const t = e.target.closest('[data-kit-item],[data-kit-go],[data-kit-back]');
+      if (!t) return;
+      const inner = e.target.closest('a[href],button,input,select,label,summary');   // 卡片里的其它按钮 / 链接（关注、复制…）优先
+      if (inner && inner !== t && t.contains(inner)) return;
+      e.preventDefault();
+      if (t.dataset.kitBack !== undefined) { fromHome && history.length > fromHome ? history.go(-fromHome) : (location.hash = ''); return; }
+      open(t.dataset.kitItem || t.dataset.kitGo);
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    window.addEventListener('hashchange', () => {
+      const r = parse();
+      let was = parse(lastHash), steps = 1;
+      if (was && was.kind === 'item') {                                 // 从详情离开
+        const base = mask && mask.dataset.base !== undefined ? mask.dataset.base : '';
+        if (location.hash === base) { lastHash = location.hash; close(true); return; }   // 只是关掉详情，底下页面不动
+        was = parse(base); steps = 2;                                   // 在详情里点了别的列表：按详情底下那页算，返回要退两步
+      }
+      lastHash = location.hash;
+      if (r && r.kind === 'item') { show(r); return; }
+      close(true);
+      const wasHome = !was;
+      if (r && r.kind === 'list') {
+        if (wasHome) { homeY = scrollY; fromHome = steps; }
+        onHome && onHome();
+        if (wasHome || was.type !== r.type) scrollTo(0, 0);
+      } else {
+        onHome && onHome();
+        if (fromHome) { scrollTo(0, homeY); fromHome = 0; }
+      }
+    });
+    // 直接打开带 #/item/ 的链接（比如大屏跳过来）：页面数据读完后由站点调用 KIT.boot()
+  }
+  function boot() { const r = parse(); if (r && r.kind === 'item') show(r); }
+  return { item: (t, fn) => (items[t] = fn), list: (t, fn) => (lists[t] = fn), open, close, route, shell, init, boot, parse, esc: kesc,
+    // 小工具：详情里的键值格、段落、关联列表
+    kv: rows => { const r = rows.filter(x => x && x[1] != null && x[1] !== ''); return r.length ? `<div class="kit-kv">${r.map(([k, v]) => `<div><small>${kesc(k)}</small><b title="${kesc(v)}">${kesc(v)}</b></div>`).join('')}</div>` : ''; },
+    sec: (title, html, note) => html ? `<div class="kit-sec"><h4>${title}${note ? `<small>${note}</small>` : ''}</h4>${html}</div>` : '',
+    p: t => t ? `<p class="kit-p">${kesc(t)}</p>` : '',
+  };
+})();
+
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const store = {
@@ -162,7 +404,8 @@ const store = {
   set(k, v) { try { localStorage.setItem('cd:' + k, JSON.stringify(v)); } catch {} },
 };
 const RANGES = [['all', '全部价位'], ['0-10', '10 万以下'], ['10-20', '10–20 万'], ['20-30', '20–30 万'], ['30-999', '30 万以上']];
-const state = { city: store.get('city', '杭州'), range: 'all', brand: '', sort: 'pct', limit: 24, month: null };
+const state = { city: store.get('city', '杭州'), range: 'all', brand: '', sort: 'pct', month: null };
+const HOME_CUTS = 12, HOME_SALES = 10, HOME_LAUNCH = 8;
 let D = null;
 
 const todayISO = () => new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
@@ -177,36 +420,54 @@ function ago(iso) {
   if (s < 86400) return Math.round(s / 3600) + ' 小时前';
   return Math.round(s / 86400) + ' 天前';
 }
+const months = () => Object.keys(D.sales).sort().reverse();
+// also：新数据是报道列表，旧数据是数字
+const alsoList = x => Array.isArray(x.also) ? x.also : [];
+const alsoN = x => Array.isArray(x.also) ? x.also.length : (x.also || 0);
 
-function cutList() {
-  const c = D.cuts[state.city] || { items: [] };
-  const [lo, hi] = state.range === 'all' ? [0, 1e9] : state.range.split('-').map(Number);
-  return c.items.filter(x => x.min >= lo && x.min < hi && (!state.brand || x.brand === state.brand))
-    .sort((a, b) => state.sort === 'pct' ? b.pct - a.pct || b.cut - a.cut : b.cut - a.cut);
+// 降价筛选：f = { city, range, brand, sort }
+function cutList(f = state) {
+  const c = D.cuts[f.city] || { items: [] };
+  const [lo, hi] = !f.range || f.range === 'all' ? [0, 1e9] : f.range.split('-').map(Number);
+  return c.items.filter(x => x.min >= lo && x.min < hi && (!f.brand || x.brand === f.brand))
+    .sort((a, b) => f.sort === 'cut' ? b.cut - a.cut : b.pct - a.pct || b.cut - a.cut);
 }
+const cutQuery = (f, over = {}) => {
+  const g = { ...f, ...over }, p = new URLSearchParams();
+  p.set('city', g.city);
+  if (g.range && g.range !== 'all') p.set('range', g.range);
+  if (g.brand) p.set('brand', g.brand);
+  if (g.sort && g.sort !== 'pct') p.set('sort', g.sort);
+  return '#/list/cuts?' + p.toString();
+};
+const upcomingList = () => { const t = todayISO(); return D.launches.filter(x => x.status === 'upcoming' && x.date && x.date >= t).sort((a, b) => a.date.localeCompare(b.date)); };
+const recentList = () => D.launches.filter(x => x.status === 'launched').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
 function render() {
+  if (!D) return;
+  renderAside();
+  if (KIT.route($('#main'))) return;                     // #/list/… 列表页
   const today = todayISO();
-  const months = Object.keys(D.sales).sort().reverse();
-  state.month ||= months[0];
+  const ms = months();
+  state.month ||= ms[0];
   const c = D.cuts[state.city] || { items: [], total: 0 };
   const topCut = [...c.items].sort((a, b) => b.pct - a.pct)[0];
-  const champ = D.sales[months[0]]?.[0];
-  const upcoming = D.launches.filter(x => x.status === 'upcoming' && x.date && x.date >= today).sort((a, b) => a.date.localeCompare(b.date));
-  const recent = D.launches.filter(x => x.status === 'launched').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const champ = D.sales[ms[0]]?.[0];
+  const upcoming = upcomingList(), recent = recentList();
   const week = recent.filter(x => x.date && diffDays(x.date, today) <= 7).length;
   const brands = [...new Set(c.items.map(x => x.brand))].sort((a, b) => a.localeCompare(b, 'zh'));
+  const list = cutList();
 
   $('#main').innerHTML = `
     <section class="hero"><h1>买车前<em>看一眼</em></h1><p>本地经销商降价榜、新车上市日历、月销量榜。降价信息来自经销商报价，实际以到店为准。</p></section>
     <div class="kpis">
-      <div class="panel kpi"><span class="k">${esc(state.city)} 降幅最大</span><span class="v">${esc(topCut?.name || '—')}</span><span class="s">${topCut ? `最高降 ${fmtW(topCut.cut)} 万 · ${topCut.pct}%` : ''}</span></div>
-      <div class="panel kpi"><span class="k">${months[0] ? ym(months[0]) : ''}销量冠军</span><span class="v">${esc(champ?.name || '—')}</span><span class="s">${champ ? champ.sales.toLocaleString() + ' 辆' : ''}</span></div>
-      <div class="panel kpi"><span class="k">近 7 天上市</span><span class="v">${week} 款新车</span><span class="s">${esc(recent.slice(0, 2).map(x => x.name).join('、'))}</span></div>
-      <div class="panel kpi"><span class="k">下一款上市</span><span class="v">${esc(upcoming[0]?.name || '—')}</span><span class="s">${upcoming[0] ? `${md(upcoming[0].date)} · ${diffDays(today, upcoming[0].date) || '今天'}${diffDays(today, upcoming[0].date) ? ' 天后' : ''}` : ''}</span></div>
+      <div class="panel kpi" ${topCut ? `data-kit-item="series/${topCut.id}?city=${encodeURIComponent(state.city)}"` : ''}><span class="k">${esc(state.city)} 降幅最大</span><span class="v">${esc(topCut?.name || '—')}</span><span class="s">${topCut ? `最高降 ${fmtW(topCut.cut)} 万 · ${topCut.pct}%` : ''}</span></div>
+      <div class="panel kpi" ${champ ? `data-kit-item="series/${champ.id}"` : ''}><span class="k">${ms[0] ? ym(ms[0]) : ''}销量冠军</span><span class="v">${esc(champ?.name || '—')}</span><span class="s">${champ ? champ.sales.toLocaleString() + ' 辆' : ''}</span></div>
+      <a class="panel kpi" href="#/list/launches?status=launched"><span class="k">近 7 天上市</span><span class="v">${week} 款新车</span><span class="s">${esc(recent.slice(0, 2).map(x => x.name).join('、'))}</span></a>
+      <div class="panel kpi" ${upcoming[0] ? `data-kit-item="launch/${D.launches.indexOf(upcoming[0])}"` : ''}><span class="k">下一款上市</span><span class="v">${esc(upcoming[0]?.name || '—')}</span><span class="s">${upcoming[0] ? `${md(upcoming[0].date)} · ${diffDays(today, upcoming[0].date) || '今天'}${diffDays(today, upcoming[0].date) ? ' 天后' : ''}` : ''}</span></div>
     </div>
 
-    <h2 class="sec" id="cuts">降价榜<small>${esc(state.city)}本地经销商报价 · 共 ${c.total} 个车系有优惠 · 显示前 100</small></h2>
+    <h2 class="sec" id="cuts">降价榜<small>${esc(state.city)}本地经销商报价 · 共 ${c.total} 个车系有优惠 · 收录前 100</small><a class="kit-morelink" href="${cutQuery(state)}">全部 ${list.length} 款 →</a></h2>
     <div class="filters">
       <div class="chips">${D.cities.map(x => `<button class="chip ${x === state.city ? 'on' : ''}" data-city="${esc(x)}">${esc(x)}</button>`).join('')}</div>
     </div>
@@ -217,50 +478,53 @@ function render() {
     </div>
     <div id="cutBox"></div>
 
-    <h2 class="sec" id="launch">新车日历<small>来自新闻标题，同一车型多家报道已合并</small></h2>
+    <h2 class="sec" id="launch">新车日历<small>来自新闻标题，同一车型多家报道已合并</small><a class="kit-morelink" href="#/list/launches">全部 ${upcoming.length + recent.length} 款 →</a></h2>
     <div class="two">
-      <div class="panel list"><h3>即将上市 · ${upcoming.length} 款</h3>${upcoming.map(x => launchRow(x, true)).join('') || '<div class="launch muted">暂无</div>'}</div>
-      <div class="panel list"><h3>近期已上市 · ${recent.length} 款</h3>${recent.slice(0, 14).map(x => launchRow(x, false)).join('')}</div>
+      <div class="panel list"><h3>即将上市 · ${upcoming.length} 款${upcoming.length > HOME_LAUNCH ? `<a class="kit-morelink" href="#/list/launches?status=upcoming">全部 →</a>` : ''}</h3>${upcoming.slice(0, HOME_LAUNCH).map(x => launchRow(x, true)).join('') || '<div class="launch muted">暂无</div>'}</div>
+      <div class="panel list"><h3>近期已上市 · ${recent.length} 款${recent.length > HOME_LAUNCH ? `<a class="kit-morelink" href="#/list/launches?status=launched">全部 →</a>` : ''}</h3>${recent.slice(0, HOME_LAUNCH).map(x => launchRow(x, false)).join('')}</div>
     </div>
-    ${D.xcar?.length ? `<div class="panel pad" style="margin-top:12px"><div class="muted" style="font-size:12.5px;margin-bottom:10px">爱卡汽车 · 最新上市车型</div><div class="xcar">${D.xcar.map(x => `<span><b>${esc(x.name)}</b>${esc(x.price)}</span>`).join('')}</div></div>` : ''}
+    ${D.xcar?.length ? `<div class="panel pad" style="margin-top:12px"><div class="muted" style="font-size:12.5px;margin-bottom:10px">爱卡汽车 · 最新上市车型 · 点开看相关报道</div><div class="xcar">${D.xcar.map((x, i) => `<span data-kit-item="xcar/${i}"><b>${esc(x.name)}</b>${esc(x.price)}</span>`).join('')}</div></div>` : ''}
 
-    <h2 class="sec" id="sales">月销量榜<small>懂车帝口径 · 名次变化对比上一个月</small></h2>
-    <div class="filters"><div class="chips">${months.map(k => `<button class="chip ${k === state.month ? 'on' : ''}" data-month="${k}">${ym(k)}</button>`).join('')}</div></div>
-    <div class="panel"><div class="table-wrap">${salesTable(months)}</div></div>
+    <h2 class="sec" id="sales">月销量榜<small>懂车帝口径 · 名次变化对比上一个月</small><a class="kit-morelink" href="#/list/sales?month=${state.month}">全部 ${(D.sales[state.month] || []).length} 名 →</a></h2>
+    <div class="filters"><div class="chips">${ms.map(k => `<button class="chip ${k === state.month ? 'on' : ''}" data-month="${k}">${ym(k)}</button>`).join('')}</div></div>
+    <div class="panel"><div class="table-wrap">${salesTable(state.month, HOME_SALES)}</div></div>
     <p class="note" style="margin-top:14px">降价榜的「最高降」是该车系所有配置中优惠最多的一款，按原指导价计算；不同配置、城市、门店差别很大，请以到店报价为准。新车信息从新闻标题自动提取，可能有遗漏或误差。</p>`;
   renderCuts();
-  renderAside();
 }
+
+const carCard = (x, city) => `<a class="panel car" href="#/item/series/${x.id}?city=${encodeURIComponent(city)}" data-kit-item="series/${x.id}?city=${encodeURIComponent(city)}">
+    <div class="img">${x.img ? `<img src="${esc(x.img)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
+    <div style="min-width:0"><b title="${esc(x.name)}">${esc(x.name)}</b><span class="brand">${esc(x.brand)}</span>
+      <div class="cut">↓${fmtW(x.cut)} 万<small>${x.pct}%</small></div><div class="now">现价 ${esc(x.price)}</div></div>
+    <div class="bar"><i style="width:${Math.min(100, x.pct * 2)}%"></i></div></a>`;
 
 function renderCuts() {
   const list = cutList();
-  $('#cutBox').innerHTML = `<div class="cars">${list.slice(0, state.limit).map(x => `<a class="panel car" href="https://www.dongchedi.com/auto/series/${x.id}" target="_blank" rel="noopener">
-      <div class="img">${x.img ? `<img src="${esc(x.img)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
-      <div style="min-width:0"><b>${esc(x.name)}</b><span class="brand">${esc(x.brand)}</span>
-        <div class="cut">↓${fmtW(x.cut)} 万<small>${x.pct}%</small></div><div class="now">现价 ${esc(x.price)}</div></div>
-      <div class="bar"><i style="width:${Math.min(100, x.pct * 2)}%"></i></div></a>`).join('') || '<div class="panel pad muted">没有符合条件的车型</div>'}</div>
-    ${list.length > state.limit ? `<button class="more" id="more">再显示 ${Math.min(24, list.length - state.limit)} 款（共 ${list.length}）</button>` : ''}`;
+  $('#cutBox').innerHTML = `<div class="cars">${list.slice(0, HOME_CUTS).map(x => carCard(x, state.city)).join('') || '<div class="panel pad muted">没有符合条件的车型</div>'}</div>
+    ${list.length > HOME_CUTS ? `<a class="more" href="${cutQuery(state)}">查看全部 ${list.length} 款 →</a>` : ''}`;
+  const m = document.querySelector('#cuts .kit-morelink');
+  if (m) { m.href = cutQuery(state); m.textContent = `全部 ${list.length} 款 →`; }
 }
 
 function launchRow(x, up) {
-  const today = todayISO(), d = x.date;
+  const today = todayISO(), d = x.date, i = D.launches.indexOf(x);
   const left = up && d ? diffDays(today, d) : null;
-  return `<a class="launch" href="${esc(x.url)}" target="_blank" rel="noopener">
+  return `<a class="launch" href="#/item/launch/${i}" data-kit-item="launch/${i}">
     <div class="d">${d ? `<b>${md(d)}</b><small>${up ? (left ? left + ' 天后' : '今天') : (diffDays(d, today) ? diffDays(d, today) + ' 天前' : '今天')}</small>` : '<small>待定</small>'}</div>
-    <div style="min-width:0"><div class="nm">${esc(x.name)}${x.presale ? '<span class="tag pre">预售</span>' : ''}${x.also ? `<span class="tag new">${x.also + 1} 家报道</span>` : ''}</div><div class="t">${esc(x.title)}</div></div>
+    <div style="min-width:0"><div class="nm">${esc(x.name)}${x.presale ? '<span class="tag pre">预售</span>' : ''}${alsoN(x) ? `<span class="tag new">${alsoN(x) + 1} 家报道</span>` : ''}</div><div class="t">${esc(x.title)}</div></div>
     <div class="p">${x.price ? priceText(x.price) : '—'}<small>${esc(x.source)}</small></div></a>`;
 }
 
-function salesTable(months) {
-  const cur = D.sales[state.month] || [], idx = months.indexOf(state.month), prev = D.sales[months[idx + 1]] || [];
+function salesTable(month, limit) {
+  const ms = months(), cur = D.sales[month] || [], idx = ms.indexOf(month), prev = D.sales[ms[idx + 1]] || [];
   const prevRank = Object.fromEntries(prev.map((x, i) => [x.id, i + 1]));
-  return `<table><tr><th>#</th><th>车型</th><th class="num">销量</th><th class="num">名次变化</th><th class="num">价格</th></tr>
-    ${cur.slice(0, 30).map((x, i) => {
+  return `<table class="sales"><tr><th>#</th><th>车型</th><th class="num">销量</th><th class="num">名次变化</th><th class="num c-price">价格</th></tr>
+    ${cur.slice(0, limit).map((x, i) => {
       const pr = prevRank[x.id], mv = pr ? pr - (i + 1) : null;
-      return `<tr><td class="rk">${i + 1}</td><td><div class="cell-car">${x.img ? `<img src="${esc(x.img)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span><b>${esc(x.name)}</b> <span class="muted" style="font-size:12px">${esc(x.brand)}</span></span></div></td>
+      return `<tr data-kit-item="series/${x.id}"><td class="rk">${i + 1}</td><td class="c-car"><div class="cell-car">${x.img ? `<img src="${esc(x.img)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="cn"><b>${esc(x.name)}</b><small>${esc(x.brand)}</small></span></div></td>
         <td class="num">${x.sales.toLocaleString()}</td>
         <td class="num">${!prev.length ? '—' : pr ? (mv ? `<span class="mv ${mv > 0 ? 'up' : 'down'}">${mv > 0 ? '↑' : '↓'}${Math.abs(mv)}</span>` : '<span class="muted">—</span>') : '<span class="tag new">新上榜</span>'}</td>
-        <td class="num muted">${esc(x.price)}</td></tr>`;
+        <td class="num muted c-price">${esc(x.price)}</td></tr>`;
     }).join('')}</table>`;
 }
 
@@ -271,38 +535,151 @@ function renderAside() {
   const brandTop = Object.entries(byBrand).sort((a, b) => b[1].length - a[1].length).slice(0, 6);
   $('#aside').innerHTML = `
     <div class="panel widget"><h3>🏷 ${esc(state.city)} 降价最多的品牌</h3>
-      ${brandTop.map(([b, l]) => `<div class="mini-row"><span>${esc(b)}</span><span>${l.length} 个车系 · 最高 ${Math.max(...l.map(x => x.pct))}%</span></div>`).join('')}
-      <div class="note" style="margin-top:6px">统计范围：降价榜前 100</div></div>
+      ${brandTop.map(([b, l]) => `<a class="mini-row" href="${cutQuery({ city: state.city, brand: b })}"><span>${esc(b)}</span><span>${l.length} 个车系 · 最高 ${Math.max(...l.map(x => x.pct))}% ›</span></a>`).join('')}
+      <div class="note" style="margin-top:6px">统计范围：降价榜前 100 · 点品牌看该品牌全部降价车系</div></div>
     <div class="panel widget"><h3>💡 怎么看降价榜</h3>
-      <div class="note">「最高降」是车系里优惠最多的那一款配置，按原指导价算；热门配置往往优惠更少。<br>降幅特别大的通常是换代清库存、销量不佳或即将停产的车型，买前确认质保和保值。<br>同一款车不同城市差价可能上万，可切换城市对比。</div></div>
+      <div class="note">「最高降」是车系里优惠最多的那一款配置，按原指导价算；热门配置往往优惠更少。<br>降幅特别大的通常是换代清库存、销量不佳或即将停产的车型，买前确认质保和保值。<br>同一款车不同城市差价可能上万，点开车型可看各城市对比。</div></div>
     <div class="panel widget"><h3>📡 数据来源 · ${D.sources.filter(s => s.ok).length}/${D.sources.length} 正常</h3>
       ${D.sources.map(s => `<div class="mini-row"><span>${esc(s.name)}</span><span class="${s.ok ? 'ok' : 'bad'}">${s.ok ? '正常' : '失败 · 沿用旧数据'}</span></div>`).join('')}
       <div class="note" style="margin-top:6px">每天自动更新 · 最近 ${new Date(D.updated).toLocaleString('zh-CN', { hour12: false })}</div></div>`;
   $('#updated').textContent = '更新于 ' + ago(D.updated);
 }
 
+// ── 详情（右侧抽屉）与列表页 ──
+const tag = t => t ? `<span>${esc(t)}</span>` : '';
+const nkey = s => String(s || '').replace(/\s+/g, '').toLowerCase();
+// 车系：降价榜（各城市）+ 销量榜（各月）里按 series_id 汇总
+function seriesOf(id) {
+  const cuts = D.cities.map(city => ({ city, x: (D.cuts[city]?.items || []).find(o => o.id === id) })).filter(o => o.x);
+  const sales = months().map(m => { const l = D.sales[m] || [], i = l.findIndex(o => o.id === id); return { m, x: l[i], rank: i + 1 }; }).filter(o => o.x);
+  const base = cuts[0]?.x || sales[0]?.x;
+  return base ? { base, cuts, sales } : null;
+}
+// 按车名找相关新车报道 / 车系
+const launchesOf = name => { const k = nkey(name); return k.length < 2 ? [] : D.launches.filter(l => { const n = nkey(l.name); return n && (n.includes(k) || k.includes(n)); }); };
+function seriesByName(name) {
+  const k = nkey(name), seen = new Set(), out = [];
+  const all = [...months().flatMap(m => D.sales[m] || []), ...D.cities.flatMap(c => D.cuts[c]?.items || [])];
+  for (const x of all) { const n = nkey(x.name); if (n.length >= 2 && k.length >= 2 && (k.includes(n) || n.includes(k)) && !seen.has(x.id)) { seen.add(x.id); out.push(x); } }
+  return out.slice(0, 4);
+}
+const seriesRow = x => `<div class="kit-row" data-kit-go="series/${x.id}">${x.img ? `<img src="${esc(x.img)}" alt="" style="object-fit:contain">` : ''}<span class="kit-rt">${esc(x.name)} <span class="kit-rm">${esc(x.brand)}</span></span><span class="kit-rm">${esc(x.price)}</span></div>`;
+const launchLink = l => `<div class="kit-row" data-kit-go="launch/${D.launches.indexOf(l)}"><span class="kit-rt">${esc(l.name)}${l.presale ? ' · 预售' : ''}<br><span class="kit-rm">${esc(l.title)}</span></span><span class="kit-rm">${l.date ? md(l.date) : '待定'}</span></div>`;
+
+KIT.item('series', (id, q) => {
+  const s = seriesOf(+id); if (!s) return null;
+  const b = s.base, city = q.get('city') || state.city;
+  const here = s.cuts.find(o => o.city === city) || s.cuts[0];
+  const maxSales = Math.max(...s.sales.map(o => o.x.sales), 1);
+  const trend = [...s.sales].reverse();
+  const same = here ? (D.cuts[here.city].items.filter(o => o.brand === b.brand && o.id !== b.id).slice(0, 5)) : [];
+  const news = launchesOf(b.name).slice(0, 5);
+  return { title: b.name, sub: `${esc(b.brand)}${b.price ? ` · 指导价 ${esc(b.min != null ? `${fmtW(b.min)}–${fmtW(b.max)} 万` : b.price)}` : ''}`,
+    cover: b.img ? b.img.replace('tplv-resize:240:0', 'tplv-resize:640:0') : '', coverTall: true,
+    tags: [here ? tag(`${here.city}有优惠`) : tag('当前未在降价榜'), s.sales.length ? tag(`${ym(s.sales[0].m)} 第 ${s.sales[0].rank} 名`) : ''],
+    big: here ? `<b style="color:var(--down)">↓${fmtW(here.x.cut)} 万</b><span class="muted">${here.city}最高降幅 ${here.x.pct}%</span>`
+      : s.sales.length ? `<b>${s.sales[0].x.sales.toLocaleString()}</b><span class="muted">辆 · ${ym(s.sales[0].m)}销量</span>` : '',
+    body: KIT.sec('关键信息', KIT.kv([['品牌', b.brand], ['指导价', b.min != null ? `${fmtW(b.min)}–${fmtW(b.max)} 万` : ''], ['经销商报价', here?.x.price || ''],
+        ['最高降价', here ? `${fmtW(here.x.cut)} 万` : ''], ['降价比例', here ? `${here.x.pct}%` : ''], ['降幅最大配置', here?.x.cfg || ''],
+        ['最近月销量', s.sales[0] ? `${s.sales[0].x.sales.toLocaleString()} 辆` : ''], ['销量排名', s.sales[0] ? `第 ${s.sales[0].rank} 名` : '']]))
+      + KIT.sec('各城市降幅对比', s.cuts.length ? `<div class="kit-rows">${s.cuts.sort((x, y) => y.x.pct - x.x.pct).map(o => `<a class="kit-row" href="${cutQuery({ city: o.city })}">
+          <span class="kit-rt">${o.city === here?.city ? `<b>${esc(o.city)}</b>` : esc(o.city)}</span><span class="cbar"><i style="width:${Math.min(100, o.x.pct * 2)}%"></i></span>
+          <span class="kit-rm" style="min-width:110px;text-align:right">↓${fmtW(o.x.cut)} 万 · ${o.x.pct}%</span></a>`).join('')}</div>` : '', `${s.cuts.length}/${D.cities.length} 个城市有优惠`)
+      + KIT.sec('近几个月销量', trend.length ? `<div class="trend">${trend.map(o => `<div><span>${o.x.sales >= 10000 ? (o.x.sales / 10000).toFixed(1) + '万' : o.x.sales}</span><i style="height:${Math.max(4, o.x.sales / maxSales * 100)}%"></i><small>${+o.m.slice(4)}月</small><small>#${o.rank}</small></div>`).join('')}</div>` : '', '懂车帝口径 · # 为当月名次')
+      + KIT.sec('相关新车报道', news.length ? `<div class="kit-rows">${news.map(launchLink).join('')}</div>` : '')
+      + KIT.sec(`${esc(b.brand)}其它降价车系`, same.length ? `<div class="kit-rows">${same.map(o => `<div class="kit-row" data-kit-go="series/${o.id}?city=${encodeURIComponent(here.city)}">${o.img ? `<img src="${esc(o.img)}" alt="" style="object-fit:contain">` : ''}<span class="kit-rt">${esc(o.name)}</span><span class="kit-rm">↓${fmtW(o.cut)} 万 · ${o.pct}%</span></div>`).join('')}</div>` : '',
+          here ? `<a class="kit-morelink" href="${cutQuery({ city: here.city, brand: b.brand })}">全部 →</a>` : ''),
+    acts: [{ text: '懂车帝车系页 ↗', href: `https://www.dongchedi.com/auto/series/${b.id}` }] };
+});
+KIT.item('launch', id => {
+  const x = D.launches[+id]; if (!x) return null;
+  const up = x.status === 'upcoming', t = todayISO(), reps = alsoList(x);
+  const rel = seriesByName(x.name), same = launchesOf(x.name).filter(o => o !== x);
+  return { title: x.name, sub: `${esc(x.source)} · ${new Date(x.time).toLocaleString('zh-CN', { hour12: false }).slice(0, -3)}`, thumbIcon: up ? '📅' : '🚗',
+    thumbBg: `color-mix(in srgb, var(${up ? '--accent' : '--new'}) 18%, transparent)`,
+    tags: [tag(up ? '即将上市' : '已上市'), x.presale ? tag('预售') : '', alsoN(x) ? tag(`${alsoN(x) + 1} 家报道`) : ''],
+    big: x.price ? `<b>${priceText(x.price)}</b><span class="muted">${x.presale ? '预售价' : '售价'}</span>` : '',
+    body: KIT.sec('要点', KIT.kv([['状态', up ? '即将上市' : '已上市'], ['上市日期', x.date ? `${x.date}${up && x.date >= t ? `（${diffDays(t, x.date) || '今天'}${diffDays(t, x.date) ? ' 天后' : ''}）` : ''}` : '待定'],
+        ['价格区间', x.price ? priceText(x.price) : ''], ['预售', x.presale ? '是' : '']]))
+      + KIT.sec('新闻标题', KIT.p(x.title) + `<p class="kit-p muted" style="margin-top:6px">车型名、价格、日期是从新闻标题自动提取的，可能有误差，以官方公布为准。</p>`)
+      + KIT.sec('报道', `<div class="kit-rows">${[x, ...reps].map(r => `<a class="kit-row" href="${esc(r.url)}" target="_blank" rel="noopener"><span class="kit-rt">${esc(r.title)}</span><span class="kit-rm">${esc(r.source)} · ${ago(r.time)} ↗</span></a>`).join('')}</div>`,
+          !reps.length && alsoN(x) ? `另有 ${alsoN(x)} 家报道` : `${reps.length + 1} 条`)
+      + KIT.sec('相关车系', rel.length ? `<div class="kit-rows">${rel.map(seriesRow).join('')}</div>` : '')
+      + KIT.sec('同车型其它条目', same.length ? `<div class="kit-rows">${same.map(launchLink).join('')}</div>` : ''),
+    acts: [{ text: '阅读原文 ↗', href: x.url }] };
+});
+KIT.item('xcar', id => {
+  const x = D.xcar?.[+id]; if (!x) return null;
+  const rel = seriesByName(x.name), news = launchesOf(x.name);
+  return { title: x.name, sub: '爱卡汽车 · 最新上市车型', thumbIcon: '🆕', thumbBg: 'color-mix(in srgb, var(--new) 18%, transparent)',
+    big: `<b>${esc(x.price)}</b><span class="muted">指导价</span>`,
+    body: KIT.sec('相关新车报道', news.length ? `<div class="kit-rows">${news.map(launchLink).join('')}</div>` : '')
+      + KIT.sec('相关车系', rel.length ? `<div class="kit-rows">${rel.map(seriesRow).join('')}</div>` : '')
+      + (news.length || rel.length ? '' : KIT.sec('说明', KIT.p('爱卡新车频道只给出车型名和价格，暂时没有匹配到相关报道或车系数据。'))),
+    acts: [{ text: '爱卡新车频道 ↗', href: 'https://newcar.xcar.com.cn/' }] };
+});
+
+// 列表页
+const LPAGE = 30;
+let listN = LPAGE;
+KIT.list('cuts', (_, q, box) => {
+  const f = { city: D.cuts[q.get('city')] ? q.get('city') : state.city, range: q.get('range') || 'all', brand: q.get('brand') || '', sort: q.get('sort') || 'pct' };
+  const all = cutList(f), c = D.cuts[f.city] || { items: [], total: 0 };
+  const brands = [...new Set(c.items.map(x => x.brand))].sort((a, b) => a.localeCompare(b, 'zh'));
+  box.innerHTML = KIT.shell({ title: `${f.city}降价榜`, note: `${all.length} 款 · 本地经销商报价 · 共 ${c.total} 个车系有优惠，收录前 100`,
+    chips: D.cities.filter(x => D.cuts[x]).map(x => ({ text: x, href: cutQuery({ ...f, city: x, brand: '' }), on: x === f.city, count: D.cuts[x].items.length })),
+    sort: [['pct', '按降幅 %'], ['cut', '按降价金额']], sortVal: f.sort,
+    body: `<div class="filters"><div class="chips">${RANGES.map(([k, l]) => `<a class="chip ${k === f.range ? 'on' : ''}" href="${cutQuery(f, { range: k })}">${l}</a>`).join('')}</div>
+        <select class="sel" data-cut-brand><option value="">全部品牌</option>${brands.map(b => `<option ${b === f.brand ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select></div>
+      <div class="cars">${all.slice(0, listN).map(x => carCard(x, f.city)).join('') || '<div class="panel pad muted">没有符合条件的车型</div>'}</div>`,
+    more: all.length > listN ? `加载更多（${listN} / ${all.length}）` : '' });
+  box.querySelector('[data-kit-sort]').onchange = e => { location.hash = cutQuery(f, { sort: e.target.value }); };
+  box.querySelector('[data-cut-brand]').onchange = e => { location.hash = cutQuery(f, { brand: e.target.value }); };
+});
+KIT.list('sales', (_, q, box) => {
+  const ms = months(), m = D.sales[q.get('month')] ? q.get('month') : ms[0], all = D.sales[m] || [];
+  box.innerHTML = KIT.shell({ title: `${ym(m)}销量榜`, note: `${all.length} 名 · 懂车帝口径 · 名次变化对比上一个月`,
+    chips: ms.map(k => ({ text: ym(k), href: '#/list/sales?month=' + k, on: k === m })),
+    body: `<div class="panel"><div class="table-wrap">${salesTable(m, listN)}</div></div>`, more: all.length > listN ? `加载更多（${listN} / ${all.length}）` : '' });
+});
+KIT.list('launches', (_, q, box) => {
+  const st = q.get('status') || 'all', up = upcomingList(), rc = recentList();
+  const all = st === 'upcoming' ? up : st === 'launched' ? rc : [...up, ...rc];
+  box.innerHTML = KIT.shell({ title: '新车上市', note: `${all.length} 款 · 来自新闻标题，同一车型多家报道已合并`,
+    chips: [['all', '全部', up.length + rc.length], ['upcoming', '即将上市', up.length], ['launched', '近期已上市', rc.length]]
+      .map(([k, n, c]) => ({ text: n, href: '#/list/launches' + (k === 'all' ? '' : '?status=' + k), on: k === st, count: c })),
+    body: `<div class="panel list">${all.slice(0, listN).map(x => launchRow(x, x.status === 'upcoming')).join('') || '<div class="launch muted">暂无</div>'}</div>`,
+    more: all.length > listN ? `加载更多（${listN} / ${all.length}）` : '' });
+});
+document.addEventListener('click', e => { if (e.target.closest('[data-kit-more]')) { listN += LPAGE; render(); } });
+window.addEventListener('hashchange', () => { if (KIT.parse()?.kind !== 'item') listN = LPAGE; }, true);
+// 列表页点顶部锚点（#cuts 等）回首页：等首页渲染完再滚到对应栏目
+window.addEventListener('hashchange', () => { const el = /^#\w+$/.test(location.hash) && document.getElementById(location.hash.slice(1)); if (el) setTimeout(() => el.scrollIntoView(), 0); });
+
+// ── 交互 ──
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-city],[data-range],[data-month],#more');
+  const t = e.target.closest('[data-city],[data-range],[data-month]');
   if (!t) return;
-  if (t.id === 'more') { state.limit += 24; renderCuts(); return; }
-  if (t.dataset.city) { state.city = t.dataset.city; state.brand = ''; state.limit = 24; store.set('city', state.city); }
-  if (t.dataset.range) { state.range = t.dataset.range; state.limit = 24; }
+  if (t.dataset.city) { state.city = t.dataset.city; state.brand = ''; store.set('city', state.city); }
+  if (t.dataset.range) { state.range = t.dataset.range; }
   if (t.dataset.month) { state.month = t.dataset.month; }
   render();
 });
 document.addEventListener('change', e => {
-  if (e.target.id === 'brand') { state.brand = e.target.value; state.limit = 24; renderCuts(); }
+  if (e.target.id === 'brand') { state.brand = e.target.value; renderCuts(); }
   if (e.target.id === 'sort') { state.sort = e.target.value; renderCuts(); }
 });
 function applyTheme(t) { document.documentElement.dataset.theme = t; }
 applyTheme(store.get('theme', 'dark'));
 $('#theme').addEventListener('click', () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; applyTheme(t); store.set('theme', t); });
 
+KIT.init(render);
 (async () => {
   try {
     D = await fetch('data.json', { cache: 'no-cache' }).then(r => r.json());   // no-cache：更新后刷新即可见
     if (!D.cuts[state.city]) state.city = D.cities.find(c => D.cuts[c]) || '杭州';
     render();
+    KIT.boot();
   } catch (e) {
     $('#main').innerHTML = '<div class="panel pad">数据加载失败，请稍后刷新</div>';
   }

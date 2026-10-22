@@ -53,7 +53,9 @@ def cuts():
         for off in (0, 50):
             lst, paging = rank(52, city=city, offset=off)
             total = paging.get("total", total)
-            items += [{**slim(x), "cut": x.get("descender_price"), "pct": x.get("count")} for x in lst if x.get("descender_price")]
+            # cfg：降幅最大的那一款配置（懂车帝 car_list 第一项）；排行接口没有级别 / 能源类型字段
+            items += [{**slim(x), "cut": x.get("descender_price"), "pct": x.get("count"),
+                       "cfg": ((x.get("car_list") or [{}])[0] or {}).get("car_name", "")} for x in lst if x.get("descender_price")]
             time.sleep(0.2)
         if items:
             out[city] = {"total": total, "items": items}
@@ -157,7 +159,7 @@ def launches():
                         "status": "upcoming" if upcoming else "launched"})
     # 同一车型多家报道：去掉年款 / 代际 / 品牌等修饰后，按包含关系去重，保留最新一条
     def norm(nm):
-        k = re.sub(r"\d{4}款|款|纯电续航\d+公里|续航\d+公里|闪充豪华旗舰轿车", "", nm)
+        k = re.sub(r"\d{4}款|款|纯电续航\d+公里|续航\d+公里|闪充豪华旗舰轿车|宣布|官宣", "", nm)
         for w in BRANDS + GENERIC:
             k = k.replace(w, "")
         return re.sub(r"\W", "", k).lower()
@@ -168,7 +170,9 @@ def launches():
             continue
         dup = next((r for r in res if k in r["_k"] or r["_k"] in k), None)
         if dup:
-            dup["also"] = dup.get("also", 0) + 1
+            # 同车型的其它报道存成列表（详情里展示），最多 12 条
+            if len(dup.setdefault("also", [])) < 12:
+                dup["also"].append({k: n[k] for k in ("title", "url", "source", "time")})
             if not dup["price"] and n["price"]:
                 dup["price"] = n["price"]
             continue
@@ -235,7 +239,7 @@ def main():
     print("sales", {k: (len(v), v[0]["name"], v[0]["sales"]) for k, v in data["sales"].items()})
     print("launches", len(data["launches"]))
     for x in data["launches"][:12]:
-        print("  ", x["status"], x["date"], x["name"], x["price"], "|", x["title"][:46])
+        print("  ", x["status"], x["date"], x["name"], x["price"], len(x.get("also", [])), "|", x["title"][:46])
     print("xcar", data["xcar"][:4])
     print("failed", [s["name"] for s in sources if not s["ok"]])
 
