@@ -468,7 +468,7 @@ function render() {
       <div class="panel kpi" ${topCut ? `data-kit-item="series/${topCut.id}?city=${encodeURIComponent(state.city)}"` : ''}><span class="k">${esc(state.city)} 降幅最大</span><span class="v">${esc(topCut?.name || '—')}</span><span class="s">${topCut ? `最高降 ${fmtW(topCut.cut)} 万 · ${topCut.pct}%` : ''}</span></div>
       <div class="panel kpi" ${champ ? `data-kit-item="series/${champ.id}"` : ''}><span class="k">${ms[0] ? ym(ms[0]) : ''}销量冠军</span><span class="v">${esc(champ?.name || '—')}</span><span class="s">${champ ? champ.sales.toLocaleString() + ' 辆' : ''}</span></div>
       <a class="panel kpi" href="#/list/launches?status=launched"><span class="k">近 7 天上市</span><span class="v">${week} 款新车</span><span class="s">${esc(recent.slice(0, 2).map(x => x.name).join('、'))}</span></a>
-      <div class="panel kpi" ${upcoming[0] ? `data-kit-item="launch/${D.launches.indexOf(upcoming[0])}"` : ''}><span class="k">下一款上市</span><span class="v">${esc(upcoming[0]?.name || '—')}</span><span class="s">${upcoming[0] ? `${md(upcoming[0].date)} · ${diffDays(today, upcoming[0].date) || '今天'}${diffDays(today, upcoming[0].date) ? ' 天后' : ''}` : ''}</span></div>
+      <div class="panel kpi" ${upcoming[0] ? `data-kit-item="launch/${LID(upcoming[0])}"` : ''}><span class="k">下一款上市</span><span class="v">${esc(upcoming[0]?.name || '—')}</span><span class="s">${upcoming[0] ? `${md(upcoming[0].date)} · ${diffDays(today, upcoming[0].date) || '今天'}${diffDays(today, upcoming[0].date) ? ' 天后' : ''}` : ''}</span></div>
     </div>
 
     <h2 class="sec" id="cuts">降价榜<small>${esc(state.city)}本地经销商报价 · 共 ${c.total} 个车系有优惠 · 收录前 100</small><a class="kit-morelink" href="${cutQuery(state)}">全部 ${list.length} 款 →</a></h2>
@@ -487,7 +487,7 @@ function render() {
       <div class="panel list"><h3>即将上市 · ${upcoming.length} 款${upcoming.length > HOME_LAUNCH ? `<a class="kit-morelink" href="#/list/launches?status=upcoming">全部 →</a>` : ''}</h3>${upcoming.slice(0, HOME_LAUNCH).map(x => launchRow(x, true)).join('') || '<div class="launch muted">暂无</div>'}</div>
       <div class="panel list"><h3>近期已上市 · ${recent.length} 款${recent.length > HOME_LAUNCH ? `<a class="kit-morelink" href="#/list/launches?status=launched">全部 →</a>` : ''}</h3>${recent.slice(0, HOME_LAUNCH).map(x => launchRow(x, false)).join('')}</div>
     </div>
-    ${D.xcar?.length ? `<div class="panel pad" style="margin-top:12px"><div class="muted" style="font-size:12.5px;margin-bottom:10px">爱卡汽车 · 最新上市车型 · 点开看相关报道</div><div class="xcar">${D.xcar.map((x, i) => `<span data-kit-item="xcar/${i}"><b>${esc(x.name)}</b>${esc(x.price)}</span>`).join('')}</div></div>` : ''}
+    ${D.xcar?.length ? `<div class="panel pad" style="margin-top:12px"><div class="muted" style="font-size:12.5px;margin-bottom:10px">爱卡汽车 · 最新上市车型 · 点开看相关报道</div><div class="xcar">${D.xcar.map(x => `<span data-kit-item="xcar/${XID(x)}"><b>${esc(x.name)}</b>${esc(x.price)}</span>`).join('')}</div></div>` : ''}
 
     <h2 class="sec" id="sales">月销量榜<small>懂车帝口径 · 名次变化对比上一个月</small><a class="kit-morelink" href="#/list/sales?month=${state.month}">全部 ${(D.sales[state.month] || []).length} 名 →</a></h2>
     <div class="filters"><div class="chips">${ms.map(k => `<button class="chip ${k === state.month ? 'on' : ''}" data-month="${k}">${ym(k)}</button>`).join('')}</div></div>
@@ -510,8 +510,12 @@ function renderCuts() {
   if (m) { m.href = cutQuery(state); m.textContent = `全部 ${list.length} 款 →`; }
 }
 
+// 新车上市 / 爱卡条目没有稳定编号：按内容生成短哈希做详情链接 id，数据更新、顺序变化后分享链接仍指向同一辆车
+const hid = str => { let h = 2166136261; for (const ch of str) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36); };
+const LID = l => 'l' + hid([l.name, l.url || l.title].join('|'));
+const XID = x => 'x' + hid(String(x.name || ''));
 function launchRow(x, up) {
-  const today = todayISO(), d = x.date, i = D.launches.indexOf(x);
+  const today = todayISO(), d = x.date, i = LID(x);
   const left = up && d ? diffDays(today, d) : null;
   return `<a class="launch" href="#/item/launch/${i}" data-kit-item="launch/${i}">
     <div class="d">${d ? `<b>${md(d)}</b><small>${up ? (left ? left + ' 天后' : '今天') : (diffDays(d, today) ? diffDays(d, today) + ' 天前' : '今天')}</small>` : '<small>待定</small>'}</div>
@@ -568,7 +572,7 @@ function seriesByName(name) {
   return out.slice(0, 4);
 }
 const seriesRow = x => `<div class="kit-row" data-kit-go="series/${x.id}">${x.img ? `<img src="${esc(x.img)}" alt="" style="object-fit:contain">` : ''}<span class="kit-rt">${esc(x.name)} <span class="kit-rm">${esc(x.brand)}</span></span><span class="kit-rm">${esc(x.price)}</span></div>`;
-const launchLink = l => `<div class="kit-row" data-kit-go="launch/${D.launches.indexOf(l)}"><span class="kit-rt">${esc(l.name)}${l.presale ? ' · 预售' : ''}<br><span class="kit-rm">${esc(l.title)}</span></span><span class="kit-rm">${l.date ? md(l.date) : '待定'}</span></div>`;
+const launchLink = l => `<div class="kit-row" data-kit-go="launch/${LID(l)}"><span class="kit-rt">${esc(l.name)}${l.presale ? ' · 预售' : ''}<br><span class="kit-rm">${esc(l.title)}</span></span><span class="kit-rm">${l.date ? md(l.date) : '待定'}</span></div>`;
 
 KIT.item('series', (id, q) => {
   const s = seriesOf(+id); if (!s) return null;
@@ -596,7 +600,7 @@ KIT.item('series', (id, q) => {
     acts: [{ text: '懂车帝车系页 ↗', href: `https://www.dongchedi.com/auto/series/${b.id}` }] };
 });
 KIT.item('launch', id => {
-  const x = D.launches[+id]; if (!x) return null;
+  const x = D.launches.find(l => LID(l) === id) || (/^\d+$/.test(id) ? D.launches[+id] : null); if (!x) return null;   // 纯数字是旧链接（数组下标），尽量兼容
   const up = x.status === 'upcoming', t = todayISO(), reps = alsoList(x);
   const rel = seriesByName(x.name), same = launchesOf(x.name).filter(o => o !== x);
   return { title: x.name, sub: `${esc(x.source)} · ${new Date(x.time).toLocaleString('zh-CN', { hour12: false }).slice(0, -3)}`, thumbIcon: up ? '📅' : '🚗',
@@ -613,7 +617,7 @@ KIT.item('launch', id => {
     acts: [{ text: '阅读原文 ↗', href: x.url }] };
 });
 KIT.item('xcar', id => {
-  const x = D.xcar?.[+id]; if (!x) return null;
+  const x = (D.xcar || []).find(o => XID(o) === id) || (/^\d+$/.test(id) ? D.xcar?.[+id] : null); if (!x) return null;
   const rel = seriesByName(x.name), news = launchesOf(x.name);
   return { title: x.name, sub: '爱卡汽车 · 最新上市车型', thumbIcon: '🆕', thumbBg: 'color-mix(in srgb, var(--new) 18%, transparent)',
     big: `<b>${esc(x.price)}</b><span class="muted">指导价</span>`,
